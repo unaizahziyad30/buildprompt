@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Architect AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
+        }
+        /* Custom scrollbar for textareas */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        
+        /* Spinner animation */
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: #3b82f6;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toast notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #10b981;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 12px 16px;
+            position: fixed;
+            z-index: 50;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+        #toast.error {
+            background-color: #ef4444;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-10 px-4 sm:px-6 lg:px-8 relative">
+
+    <!-- Header Section -->
+    <div class="max-w-3xl w-full text-center mb-10">
+        <h1 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 mb-4">
+            Prompt Architect AI
+        </h1>
+        <p class="text-slate-400 text-lg">
+            Ubah ide singkat menjadi prompt Masterpiece dengan struktur: <br class="hidden md:block">
+            <span class="text-blue-300 font-medium">Role &rarr; Task &rarr; Context &rarr; Reasoning &rarr; Rules &rarr; Format</span>
+        </p>
+    </div>
+
+    <!-- Main Card -->
+    <div class="max-w-3xl w-full bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden flex flex-col">
+        
+        <!-- Input Section -->
+        <div class="p-6 md:p-8 border-b border-slate-700">
+            <label for="shortPrompt" class="block text-sm font-medium text-slate-300 mb-2">
+                Ide / Prompt Singkat Anda:
+            </label>
+            <textarea id="shortPrompt" rows="3" 
+                class="w-full bg-slate-900 border border-slate-600 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                placeholder="Contoh: Buatkan saya rencana konten Instagram selama sebulan untuk bisnis kedai kopi lokal saya."></textarea>
+            
+            <button id="generateBtn" onclick="generateStructuredPrompt()" 
+                class="mt-4 w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                </svg>
+                <span>Bangun Prompt</span>
+                <div id="loader" class="spinner hidden ml-2"></div>
+            </button>
+        </div>
+
+        <!-- Output Section -->
+        <div id="resultContainer" class="p-6 md:p-8 bg-slate-800 hidden flex-col h-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-emerald-400">Hasil Prompt Terstruktur:</h3>
+                <button onclick="copyToClipboard()" class="text-slate-400 hover:text-white flex items-center gap-1 text-sm bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Salin
+                </button>
+            </div>
+            
+            <div class="relative flex-grow">
+                <textarea id="resultText" readonly 
+                    class="w-full h-80 bg-slate-900 border border-slate-600 rounded-xl p-5 text-slate-200 text-sm leading-relaxed focus:outline-none resize-y"></textarea>
+            </div>
+            
+            <div class="mt-4 bg-slate-900/50 p-4 rounded-lg border border-slate-700 text-xs text-slate-400">
+                <p><strong class="text-slate-300">Struktur yang diterapkan:</strong></p>
+                <ul class="list-disc list-inside mt-1 space-y-1">
+                    <li><span class="text-blue-400">Role:</span> Persona expert yang spesifik.</li>
+                    <li><span class="text-orange-400">Task:</span> Objektif yang jelas.</li>
+                    <li><span class="text-emerald-400">Context:</span> Informasi latar belakang & sumber daya.</li>
+                    <li><span class="text-red-400">Reasoning/Goal:</span> Tujuan akhir dan kualitas yang diharapkan.</li>
+                    <li><span class="text-purple-400">Rules:</span> Batasan dan kondisi spesifik.</li>
+                    <li><span class="text-yellow-400">Format:</span> Struktur output yang diinginkan.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast">Notifikasi</div>
+
+    <script>
+        // System instruction yang mendefinisikan struktur prompt
+        const systemPrompt = `Anda adalah seorang ahli Prompt Engineering kelas dunia. 
+Tugas Anda adalah menganalisis ide atau prompt singkat dari pengguna, lalu mengembangkannya menjadi prompt yang sangat detail, profesional, dan terstruktur kuat berdasarkan metodologi "The Anatomy of a Claude prompt".
+
+Prompt yang Anda hasilkan HARUS merangkum elemen-elemen berikut secara berurutan dan mengalir natural (tidak perlu selalu menggunakan kata kunci elemennya sebagai judul, tapi strukturnya harus terlihat jelas):
+
+1. Role (Peran): Definisikan persona ahli yang sangat spesifik (misal: "Bertindaklah sebagai Senior [Profesi] dengan keahlian mendalam di...").
+2. Task (Tugas): Nyatakan tujuan yang sangat jelas dan apa hasil (deliverable) akhirnya.
+3. Context (Konteks): Berikan latar belakang, target audiens, kendala, data, atau sumber daya (Bisa menggunakan poin-poin "Berikut yang saya ketahui:"). Asumsikan atau ciptakan konteks logis yang relevan jika pengguna tidak memberikannya.
+4. Reasoning / Goal (Alasan/Tujuan): Jelaskan *mengapa* tugas ini penting dan standar kualitas yang diharapkan (misal: "Tujuannya adalah strategi yang bisa langsung dieksekusi...").
+5. Rules (Aturan): Tetapkan batasan ketat, kondisi berhenti, atau hal-hal yang tidak boleh dilakukan (misal: "Aturan ketat:", "Hanya berhenti ketika:").
+6. Format (Format Output): Tentukan struktur pasti dari output yang diinginkan AI (misal: format tabel, sprint mingguan, poin-poin spesifik).
+
+PENTING:
+- OUTPUT ANDA HANYA BOLEH BERISI TEKS PROMPT FINAL YANG SIAP DISALIN OLEH PENGGUNA.
+- Jangan tambahkan pengantar (seperti "Ini prompt Anda:") atau penutup. 
+- Gunakan bahasa yang sesuai dengan input pengguna (jika input bahasa Indonesia, balas dengan bahasa Indonesia yang rapi, tajam, dan profesional).
+- Format prompt final menggunakan spasi antar paragraf atau bullet points agar mudah dibaca.`;
+
+        async function generateStructuredPrompt() {
+            const shortPrompt = document.getElementById('shortPrompt').value.trim();
+            if (!shortPrompt) {
+                showToast("Harap masukkan ide prompt terlebih dahulu!", true);
+                return;
+            }
+
+            // UI State: Loading
+            const btn = document.getElementById('generateBtn');
+            const loader = document.getElementById('loader');
+            const btnText = btn.querySelector('span');
+            const resultContainer = document.getElementById('resultContainer');
+            const resultText = document.getElementById('resultText');
+
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            loader.classList.remove('hidden');
+            btnText.textContent = "Menganalisis...";
+            
+            // API Configuration
+            const apiKey = ""; // Canvas will automatically inject this
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: shortPrompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            // Exponential backoff logic variables (simplified)
+            let attempt = 0;
+            const maxRetries = 3;
+            let success = false;
+
+            while (attempt < maxRetries && !success) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
+                        const generatedPrompt = data.candidates[0].content.parts[0].text;
+                        resultText.value = generatedPrompt.trim();
+                        resultContainer.classList.remove('hidden');
+                        
+                        // Scroll to result smoothly
+                        resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        success = true;
+                        showToast("Prompt berhasil dibangun!");
+                    } else {
+                        throw new Error("Struktur respons API tidak sesuai atau terjadi pemblokiran.");
+                    }
+                } catch (error) {
+                    attempt++;
+                    console.error(`Attempt ${attempt} failed:`, error);
+                    if (attempt >= maxRetries) {
+                        showToast("Gagal menghasilkan prompt. Silakan coba lagi.", true);
+                    } else {
+                        // Wait before retrying (exponential backoff 1s, 2s)
+                        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
+                    }
+                }
+            }
+
+            // UI State: Reset
+            btn.disabled = false;
+            btn.classList.remove('opacity-80', 'cursor-not-allowed');
+            loader.classList.add('hidden');
+            btnText.textContent = "Bangun Prompt";
+        }
+
+        function copyToClipboard() {
+            const copyText = document.getElementById("resultText");
+            
+            // Check if there is text to copy
+            if(!copyText.value) return;
+
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); /* For mobile devices */
+
+            try {
+                document.execCommand('copy');
+                // Deselect text
+                window.getSelection().removeAllRanges();
+                showToast("Prompt disalin ke clipboard!");
+            } catch (err) {
+                showToast("Gagal menyalin text.", true);
+            }
+        }
+
+        // Custom Toast Notification Function (Replaces alert)
+        function showToast(message, isError = false) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            
+            if (isError) {
+                toast.classList.add("error");
+            } else {
+                toast.classList.remove("error");
+            }
+
+            toast.classList.add("show");
+
+            // Hide after 3 seconds
+            setTimeout(function(){ 
+                toast.classList.remove("show"); 
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
